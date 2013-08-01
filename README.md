@@ -1,4 +1,4 @@
-function_generator
-==================
+bbxmDSPfir
+===========
 
-Applied DSP Final Project
+Beagle Board XM IIR DSP Demo Project
