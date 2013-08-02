@@ -1,3 +1,30 @@
+/*
+ * main.c
+ * 
+ * Copyright 2013 Miguel Alonso Jr <drmiguelalonsojr@gmail.com>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ * 
+ * 
+ */
+
+/*
+	Header definitions
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h> // This lets us capture the Ctrl-C interrupt
@@ -6,18 +33,23 @@
 #include "dspThread.h" // DSP thread definitions
 #include "debug.h" // DBG and ERR macros
 #include "audioIO.h" // Audio IO definitions
+
 /*
 	Global variables
 */
-#define WIDTH 40 // This defines the width of the window
-#define HEIGHT 10 // This defines the height of the window
+
+#define WIDTH 45 // This defines the width of the window
+#define HEIGHT 15 // This defines the height of the window
 int startx = 0; // Defines window starting point for x
 int starty = 0; // Defines window starting point for y
 // Defines menu choices
 char *choices[] = { 
-			"Filter On",
-			"Filter Off",
-			"Exit"
+			"       [o]     SINE WAVE     [o]     ",
+			"       [o]    SQUARE WAVE    [o]     ",
+			"       [o] TRAIANGULAR WAVE  [o]     ",
+			"       [o]   SAWTOOTH WAVE   [o]     ",
+			"       [-]    STOP SIGNALS   [-]     ",
+			"       [x]    EXIT SYSTEM    [x]     "
 		  };
 int n_choices = sizeof(choices) / sizeof(char *);
 dsp_thread_env dsp_env = {0,1,1.0,0}; // This is used for main to communicate to the dspThread
@@ -64,8 +96,8 @@ int main(int argc, char **argv)
 	starty = (24 - HEIGHT) / 2;
 	menu_win = newwin(HEIGHT, WIDTH, starty, startx);
 	keypad(menu_win, TRUE);
-	mvprintw(0, 0, "Use arrow keys to go up and down, Press enter to select a choice.");
-	mvprintw(1, 0, "For filtered output, press right and left arrows to raise or lower the volume.");
+	//mvprintw(0, 0, "Use arrow keys to go up and down, Press enter to select a choice.");
+	//mvprintw(1, 0, "For filtered output, press right and left arrows to raise or lower the volume.");
 	refresh();
 	print_menu(menu_win, highlight);
 	while(1)
@@ -87,7 +119,7 @@ int main(int argc, char **argv)
 				choice = highlight;
 				break;
 			case KEY_RIGHT:
-				if (dsp_env.volume < 1)
+				if (dsp_env.volume < 1.5)
 					dsp_env.volume+=0.1;
 				break;
 			case KEY_LEFT:
@@ -104,13 +136,25 @@ int main(int argc, char **argv)
 				dsp_env.filter_on = 1;
 				break;
 			case 2:
+				dsp_env.filter_on = 2;
+				break;
+			
+			case 3:
+				dsp_env.filter_on = 3;
+				break;
+
+			case 4:
+				dsp_env.filter_on = 4;
+				break;	
+
+			case 5:
 				dsp_env.filter_on = 0;
 				break;
 			default:
 				break;
 		}
 		print_menu(menu_win, highlight);
-		if(choice == 3)	/* User did a choice come out of the infinite loop */
+		if(choice == 6)	/* User did a choice come out of the infinite loop */
 			break;
 	}
 	dsp_env.quit = 1;
@@ -145,9 +189,8 @@ void print_menu(WINDOW *menu_win, int highlight)
 {
 	int x, y, i;	
 
-	mvwprintw(menu_win, 1, 2, "Low Pass IIR Filter, fc = %d Hz", SAMPLE_RATE);
-	mvwprintw(menu_win, 2, 2, "Left Channel");
-	mvwprintw(menu_win, 3, 2, "_________________________________");
+	mvwprintw(menu_win, 1, 2, "FUNCTION GENERATOR BY ANTONIO TECHNOLOGIES");
+	mvwprintw(menu_win, 2, 2, "__________________________________________");
 	x = 2;
 	y = 5;
 	box(menu_win, 0, 0);

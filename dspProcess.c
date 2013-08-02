@@ -1,82 +1,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <math.h>
 #include "dspProcess.h"
-#include "buffer.h"
 
-#define SHIFT 13
-#define MWSPT_NSEC 9
-const int NL[MWSPT_NSEC] = { 1,3,1,3,1,3,1,3,1 };
-const short NUM[MWSPT_NSEC][3] = {};
-const int DL[MWSPT_NSEC] = { 1,3,1,3,1,3,1,3,1 };
-const short DEN[MWSPT_NSEC][3] = {};
+#define PI 3.14
+#define FS 8000
+#define F 1000
+//#define SINE_TBL 8
+#define SINE_TBL 3
+#define SQRE_TBL 32
+#define TRIA_TBL 6
+#define SAWT_TBL 17
 
-
-#define SECTIONS (MWSPT_NSEC-1)/2
-
-buffer *wnL[SECTIONS];
-buffer *wnR[SECTIONS];
-
-
-// Implements filtering for a second order section
-int iir_sos(short xn, int section){
-	int wn0 = 0;
-	short wn1 = readn(wnL[section],0);
-	short wn2 = readn(wnL[section],1);
-	int yn = 0;
-	int scaleIndex = 2*section;
-	int sectionIndex = scaleIndex + 1;
-	wn0 = ((NUM[scaleIndex][0]*xn)) - ((DEN[sectionIndex][1]*wn1)) - ((DEN[sectionIndex][2]*wn2));
-	wn0 = wn0 >> SHIFT;
-	yn = ((NUM[sectionIndex][0]*wn0)) + ((NUM[sectionIndex][1]*wn1)) + ((NUM[sectionIndex][2]*wn2));
-	push(wnL[section],(short)wn0);
-	return yn>>SHIFT;
-}
-
-// Fourth order IIR filter
-short iirL(short xn){
-	int section;
-	int input = xn;
-	int yn;
-	for(section = 0; section < SECTIONS; section ++){
-		yn = iir_sos((short)input,section);
-		input = yn;
-	}
-	return (short)yn;
-}
+//short sine_vals[SINE_TBL] = {0, 11583, 16384, 11583, 0, -11583, -16384, -11583};
+short sine_vals[SINE_TBL] = {0, 30000, -30000};
+short square_vals[SQRE_TBL] = {16384, 16384, 16384, 16384, 16384, 16384, 16384, 16384, 
+				16384, 16384, 16384, 16384, 16384, 16384, 16384, 16384, 
+				-16384, -16384, -16384, -16384, -16384, -16384, -16384, -16384,
+				-16384, -16384, -16384, -16384, -16384, -16384, -16384, -16384};
+short trian_vals[TRIA_TBL] = {-13500, 13500, -13500, -13500, 13500, -13500};
+short sawto_vals[SAWT_TBL] = {0, 512, 1024, 1536, 2048, 2560, 3072, 3584, 4096, 4608, 5120, 5632, 6144, 6656, 7168, 7680, 8192};
 
 // core dsp block processing
 int dspBlockProcess(short *outputBuffer, short *inputBuffer, int samples, int * filter_on, double * volume){
+	int index = 0;
 	int i;
-	if(*filter_on == 0) { // no filter
-		memcpy((char *)outputBuffer, (char *)inputBuffer, 2*samples);
+	if(*filter_on == 0) {
+		for (i=0; i < samples; i+=2){			
+			outputBuffer[i] = 0;
+			outputBuffer[i+1] = 0;
+		}
 	}
-	else if(*filter_on == 1) { // filter
-		for (i=0; i < samples; i+=2){
-			outputBuffer[i] = (short)(iirL(inputBuffer[i]));
-			outputBuffer[i+1] = (short)(iirL(inputBuffer[i]));
+	else if(*filter_on == 1) {
+		for (i=0; i < samples; i+=2){			
+			//Left Channel (Red)			
+			outputBuffer[i] = (*volume)*sine_vals[index%SINE_TBL];
+			//Right Channel (White)			
+			outputBuffer[i+1] = (*volume)*sine_vals[index%SINE_TBL];
+			index++;
+		}
+	}
+	else if(*filter_on == 2) {
+		for (i=0; i < samples; i+=2){			
+			outputBuffer[i] = (*volume)*square_vals[index%SQRE_TBL];
+			outputBuffer[i+1] = (*volume)*square_vals[index%SQRE_TBL];
+			index++;
+		}
+	}
+	else if(*filter_on == 3) {
+		for (i=0; i < samples; i+=2){			
+			outputBuffer[i] = (*volume)*trian_vals[index%TRIA_TBL];
+			outputBuffer[i+1] = (*volume)*trian_vals[index%TRIA_TBL];
+			index++;
+		}
+	}
+	else if(*filter_on == 4) {
+		for (i=0; i < samples; i+=2){			
+			outputBuffer[i] = (*volume)*sawto_vals[index%SAWT_TBL];
+			outputBuffer[i+1] = (*volume)*sawto_vals[index%SAWT_TBL];
+			index++;
 		}
 	}
 	return DSP_PROCESS_SUCCESS;
-}
-
-void initIIRBuffers(){
-	int i ;
-	for(i=0; i<SECTIONS; i++) {
-		wnL[i] = malloc(sizeof(buffer));
-		initBuffer(wnL[i]);
-		wnR[i] = malloc(sizeof(buffer));
-		initBuffer(wnR[i]);
-	}
-}
-
-void destroyIIRBuffers(){
-    int i ;
-	for(i=0; i<SECTIONS; i++) {
-		destroyBuffer(wnL[i]);
-		free(wnL[i]);
-		destroyBuffer(wnR[i]);
-		free(wnR[i]);
-	}
 }

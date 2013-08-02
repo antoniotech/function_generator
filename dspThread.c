@@ -83,7 +83,6 @@ void *ioProcessing(void *envByRef, void *apPtr){
     double * volume = malloc(sizeof(double));
     int i;
     
-    initIIRBuffers();    
     *filter_on = (*envPtr).filter_on;
     *volume = (*envPtr).volume;
     
@@ -121,11 +120,11 @@ void *ioProcessing(void *envByRef, void *apPtr){
 		*volume = (*envPtr).volume;
 	
 		// Read capture buffer from ALSA input device
-		while( snd_pcm_readi((*ap).pcm_capture_handle, (*ap).inputBuffer, (*ap).exact_bufsize) < 0 ){
+		/*while( snd_pcm_readi((*ap).pcm_capture_handle, (*ap).inputBuffer, (*ap).exact_bufsize) < 0 ){
 			snd_pcm_prepare((*ap).pcm_capture_handle);
 			ERR( "<<<<<<<<<<<<<<< Buffer Prime Overrun >>>>>>>>>>>>>>>\n");
 			ERR( "Error reading the data from file descriptor %d\n", (int) (*ap).pcm_capture_handle );
-		}
+		}*/
 		
 		// Audio process
 		//  passing the data as short since we are processing 16-bit audio.
@@ -142,9 +141,7 @@ void *ioProcessing(void *envByRef, void *apPtr){
 			snd_pcm_writei((*ap).pcm_output_handle, (*ap).outputBuffer, (*ap).exact_bufsize);
 		}
     }
-
-	// Free up resources
-	destroyIIRBuffers();
+	
 	free(filter_on);
 	free(volume);
 
